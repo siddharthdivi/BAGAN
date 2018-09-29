@@ -369,7 +369,9 @@ class BalancingGAN:
             reconstructor_fname = "{}/{}_encoder.h5".format(self.res_dir, self.target_class_id)
         else:
             reconstructor_fname = rec_fname
-
+        
+        #print ("Inside init_autoenc : ",generator_fname,reconstructor_fname)
+        
         multivariate_prelearnt = False
 
         # Preload the autoencoders
@@ -393,6 +395,7 @@ class BalancingGAN:
             print("BAGAN: training autoencoder")
             autoenc_train_loss = []
             for e in range(self.autoenc_0_epochs):
+                print ("Epoch : ",e)
                 autoenc_train_loss_crt = []
                 for image_batch, label_batch in bg_train.next_batch():
 
@@ -442,16 +445,21 @@ class BalancingGAN:
 
     def _get_lst_bck_name(self, element):
         # Find last bck name
+        print ("-------------")
+        print ("Inside lst_bck_name : ",os.listdir(self.res_dir))
+        print ("-------------")
+        
         files = [
             f for f in os.listdir(self.res_dir)
             if re.match(r'bck_c_{}'.format(self.target_class_id) + "_" + element, f)
         ]
+        
         if len(files) > 0:
             fname = files[0]
             e_str = os.path.splitext(fname)[0].split("_")[-1]
 
             epoch = int(e_str)
-
+            
             return epoch, fname
 
         else:
@@ -460,8 +468,12 @@ class BalancingGAN:
     def init_gan(self):
         # Find last bck name
         epoch, generator_fname = self._get_lst_bck_name("generator")
-
+        
         new_e, discriminator_fname = self._get_lst_bck_name("discriminator")
+        
+        epoch = 0
+        new_e = 0
+        
         print("Debug init bagan: epoch, gen_name, new_e, disc_name", epoch, generator_fname, new_e, discriminator_fname)
 
         if new_e != epoch:
@@ -514,6 +526,7 @@ class BalancingGAN:
             print("BAGAN init_autoenc")
             self.init_autoenc(bg_train)
             print("BAGAN autoenc initialized, init gan")
+            self.backup_point(0)
             start_e = self.init_gan()
             print("BAGAN gan initialized, start_e: ", start_e)
 
@@ -554,12 +567,19 @@ class BalancingGAN:
             )
 
             # Train
+            print ("-----------")
+            print ("start_e:",start_e)
+            print ("epochs : ",epochs)
+            print ("-----------")
+            
             for e in range(start_e, epochs):
                 print('Training [dMode, gMode] [{}, {}]. Epoch {} of {}'
                       .format(self.dratio_mode, self.gratio_mode, e + 1, epochs))
                 # train_disc_loss, train_gen_loss = self._train_one_epoch(copy.deepcopy(bg_train))
                 train_disc_loss, train_gen_loss = self._train_one_epoch(bg_train)
-
+                print ("---------------")
+                print ("Check")
+                print ("---------------")
                 # Test: # generate a new batch of noise
                 nb_test = bg_test.get_num_samples()
                 fake_size = int(np.ceil(nb_test * 1.0/self.nclasses ))
